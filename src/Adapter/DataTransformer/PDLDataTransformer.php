@@ -34,9 +34,10 @@ class PDLDataTransformer
 
     /**
      * @param SimpleXMLElement $input
+     * @param string $imageUrl
      * @return ComicDTO
      */
-    public function transform(SimpleXMLElement $input): ComicDTO
+    public function transform(SimpleXMLElement $input, string $imageUrl): ComicDTO
     {
         if (!$this->objectPropertiesValidator->isValidObject($input, static::REQUIRED_PROPERTIES)){
             throw new InvalidArgumentException(
@@ -46,7 +47,9 @@ class PDLDataTransformer
                 )
             );
         }
+
         $comicDTO = new ComicDTO();
+        $comicDTO->imageUrl = $imageUrl;
         $comicDTO->title = (string) $input->title;
         $comicDTO->webUrl = (string) $input->guid;
         $comicDTO->description = (string) $input->description;

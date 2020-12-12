@@ -8,6 +8,7 @@ use Exception;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 /**
  * Class CollectorService
@@ -51,7 +52,6 @@ class CollectorService
 
     /**
      * @return ComicDTO[]
-     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function getComics(): array
     {

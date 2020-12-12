@@ -43,17 +43,17 @@ class PDLDataTransformerTest extends TestCase
             ->willReturn($missedPropertiesList)
         ;
         $dataTransformer = new PDLDataTransformer($validator);
-        $dataTransformer->transform(new SimpleXMLElement('<xml/>'));
+        $dataTransformer->transform(new SimpleXMLElement('<xml/>'), '');
     }
 
     /**
      * @dataProvider getTestValidTransformData
-     * @param array $input
+     * @param array $inputItem
      */
-    public function testValidTransform(array $input)
+    public function testValidTransform(array $inputItem, string $imgUrl)
     {
         $xmlInput = new SimpleXMLElement('<root/>');
-        foreach ($input as $key => $value) {
+        foreach ($inputItem as $key => $value) {
             $xmlInput->addChild($key, $value);
         }
 
@@ -65,14 +65,14 @@ class PDLDataTransformerTest extends TestCase
         $validator->expects($this->never())->method('getJoinedMissesProperties');
 
         $dataTransformer = new PDLDataTransformer($validator);
-        $comicDTO = $dataTransformer->transform($xmlInput);
+        $comicDTO = $dataTransformer->transform($xmlInput, $imgUrl);
 
         $expectedComicDTO = new ComicDTO();
-       // $expectedComicDTO->imageUrl = $input['img'];
-        $expectedComicDTO->title = $input['title'];
-        $expectedComicDTO->description = $input['description'];
-        $expectedComicDTO->webUrl = $input['guid'];
-        $expectedComicDTO->publishDate = Carbon::createFromTimeString($input['pubDate']);
+        $expectedComicDTO->imageUrl = $imgUrl;
+        $expectedComicDTO->title = $inputItem['title'];
+        $expectedComicDTO->description = $inputItem['description'];
+        $expectedComicDTO->webUrl = $inputItem['guid'];
+        $expectedComicDTO->publishDate = Carbon::createFromTimeString($inputItem['pubDate']);
 
         $this->assertEquals($expectedComicDTO, $comicDTO);
     }
@@ -93,8 +93,9 @@ class PDLDataTransformerTest extends TestCase
                     'description' => 'my description',
                     'guid' => 'my url',
                     'pubDate' => 'Wed, 09 Dec 2020 20:52:12 +0000'
-                ]
-            ]
+                ],
+                'my url',
+            ],
         ];
     }
 }
