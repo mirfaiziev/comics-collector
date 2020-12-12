@@ -29,3 +29,10 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+    adapters.xkcd_adapter:
+        class: App\Adapter\XkcdAdapter
+    adapters.pdl_adapter:
+        class: App\Adapter\PDLAdapter
+    App\Service\CollectorService:
+        arguments:
+            $adapters: [ '@adapters.xkcd_adapter', '@adapters.pdl_adapter']

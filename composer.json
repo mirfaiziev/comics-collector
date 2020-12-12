@@ -7,6 +7,7 @@
         "php": ">=7.2.5",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "nesbot/carbon": "^2.42",
         "sensio/framework-extra-bundle": "^5.6",
         "symfony/console": "5.2.*",
         "symfony/dotenv": "5.2.*",
@@ -56,5 +57,8 @@
             "allow-contrib": false,
             "require": "5.2.*"
         }
+    },
+    "require-dev": {
+        "symfony/phpunit-bridge": "^5.2"
     }
 }
