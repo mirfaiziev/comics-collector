@@ -4,6 +4,10 @@ namespace App\DTO;
 
 use Carbon\Carbon;
 
+/**
+ * Class ComicDTO
+ * @package App\DTO
+ */
 class ComicDTO
 {
     public string $imageUrl;

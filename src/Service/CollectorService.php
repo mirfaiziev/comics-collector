@@ -6,18 +6,24 @@ use App\Adapter\ApiAdapterInterface;
 use App\DTO\ComicDTO;
 use InvalidArgumentException;
 
+/**
+ * Class CollectorService
+ * @package App\Service
+ */
 class CollectorService
 {
     /**
      * @var array|ApiAdapterInterface[]
      */
     private array $adapters = [];
+    private SortComicsService $sortComicService;
 
     /**
      * CollectorService constructor.
      * @param ApiAdapterInterface[]|array $adapters
+     * @param SortComicsService $sortComicService
      */
-    public function __construct(array $adapters)
+    public function __construct(array $adapters, SortComicsService $sortComicService)
     {
         foreach ($adapters as $adapter) {
             if (!$adapter instanceof ApiAdapterInterface) {
@@ -27,11 +33,12 @@ class CollectorService
             }
 
             $this->adapters[] = $adapter;
+            $this->sortComicService = $sortComicService;
         }
     }
 
     /**
-     * @return array|ComicDTO
+     * @return ComicDTO[]
      */
     public function getComics(): array
     {
@@ -40,16 +47,6 @@ class CollectorService
             $comics = array_merge($comics, $adapter->getComics());
         }
 
-        return $this->sortComics($comics);
-    }
-
-    /**
-     * TODO: need to be implemented
-     * @param array|ComicDTO $comics
-     * @return array|ComicDTO
-     */
-    private function sortComics(array $comics): array
-    {
-        return $comics;
+        return $this->sortComicService->sortComics($comics);
     }
 }

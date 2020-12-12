@@ -20,6 +20,6 @@ class IndexController extends AbstractController
      */
     public function index(CollectorService $collectorService): JsonResponse
     {
-        return new JsonResponse($collectorService->getComics());
+        return $this->json($collectorService->getComics());
     }
 }
