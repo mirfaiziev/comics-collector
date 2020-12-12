@@ -32,4 +32,3 @@ services:
     App\Service\CollectorService:
         arguments:
             $adapters: [ '@App\Adapter\XkcdAdapter', '@App\Adapter\PDLAdapter']
-            $sortComicService: '@App\Service\SortComicService'

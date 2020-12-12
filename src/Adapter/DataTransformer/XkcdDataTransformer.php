@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Adapter\XkcdAdapter;
+namespace App\Adapter\DataTransformer;
 
+use App\Adapter\DataTransformer\Validator\ObjectPropertiesValidator;
 use App\DTO\ComicDTO;
 use Carbon\Carbon;
 use InvalidArgumentException;
@@ -10,12 +11,13 @@ use InvalidArgumentException;
  * NOTE: because there is no time of publishDate it will be transformed
  * the begging of the day, otherwise later it will not possible to sort
  *
- * Class DataTransformer
- * @package App\Adapter\XkcdAdapter
+ * Class XkcdDataTransformer
+ * @package App\Adapter\DataTransformer
  */
-class DataTransformer
+class XkcdDataTransformer
 {
     const WEB_URL = 'https://xkcd.com/%d/';
+
     const REQUIRED_PROPERTIES = [
         'img',
         'title',
@@ -25,7 +27,17 @@ class DataTransformer
         'num'
     ];
 
-    private string $missedProperty;
+    private ObjectPropertiesValidator $objectPropertiesValidator;
+
+    /**
+     * XkcdDataTransformer constructor.
+     * @param ObjectPropertiesValidator $objectPropertiesValidator
+     */
+    public function __construct(ObjectPropertiesValidator $objectPropertiesValidator)
+    {
+        $this->objectPropertiesValidator = $objectPropertiesValidator;
+    }
+
 
     /**
      * @param object $input
@@ -33,9 +45,13 @@ class DataTransformer
      */
     public function transform(object $input): ComicDTO
     {
-        if (!$this->isValidInput($input)){
+        if (!$this->objectPropertiesValidator->isValidObject($input, static::REQUIRED_PROPERTIES)){
             throw new InvalidArgumentException(
-                sprintf("Invalid data to transform, property %s should be present", $this->missedProperty));
+                sprintf(
+                    "Invalid data to transform, the following properties should be present in the object: %s",
+                    $this->objectPropertiesValidator->getJoinedMissesProperties()
+                )
+            );
         }
 
         $comicDTO = new ComicDTO();
@@ -48,21 +64,5 @@ class DataTransformer
         );
 
         return $comicDTO;
-    }
-
-    /**
-     * @param object $input
-     * @return bool
-     */
-    private function isValidInput(object $input): bool
-    {
-        foreach (static::REQUIRED_PROPERTIES as $propertyName) {
-            if (!property_exists($input, $propertyName)) {
-                $this->missedProperty = $propertyName;
-                return false;
-            }
-        }
-
-        return true;
     }
 }

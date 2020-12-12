@@ -2,7 +2,7 @@
 
 namespace App\Adapter;
 
-use App\Adapter\XkcdAdapter\DataTransformer;
+use App\Adapter\DataTransformer\XkcdDataTransformer;
 use App\DTO\ComicDTO;
 use Exception;
 use Psr\Log\LoggerInterface;
@@ -19,7 +19,7 @@ class XkcdAdapter implements ApiAdapterInterface
     const CONCRETE_COMIC_URL = 'http://xkcd.com/%d/info.0.json';
 
     private HttpClientInterface $httpClient;
-    private DataTransformer $dataTransformer;
+    private XkcdDataTransformer $dataTransformer;
     private LoggerInterface $logger;
 
     private int $numberOfPictures;
@@ -29,13 +29,13 @@ class XkcdAdapter implements ApiAdapterInterface
      * XkcdAdapter constructor.
      * @param ContainerBagInterface $params
      * @param HttpClientInterface $httpClient
-     * @param DataTransformer $dataTransformer
+     * @param XkcdDataTransformer $dataTransformer
      * @param LoggerInterface $logger
      */
     public function __construct(
         ContainerBagInterface $params,
         HttpClientInterface $httpClient,
-        DataTransformer $dataTransformer,
+        XkcdDataTransformer $dataTransformer,
         LoggerInterface $logger
     ) {
         $this->numberOfPictures = $params->get('app.xkcd_adapter.number_of_pictures');
