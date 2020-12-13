@@ -17,17 +17,19 @@ use Symfony\Contracts\Cache\ItemInterface;
 class CollectorService
 {
     /**
-     * @var array|ApiAdapterInterface[]
+     * @var ApiAdapterInterface[]|array
      */
     private array $adapters = [];
     private SortComicsService $sortComicService;
     private CacheInterface $cache;
+    private LoggerInterface $logger;
 
     /**
      * CollectorService constructor.
      * @param ApiAdapterInterface[]|array $adapters
      * @param SortComicsService $sortComicService
      * @param CacheInterface $cache
+     * @param LoggerInterface $logger
      */
     public function __construct(
         array $adapters,
@@ -39,7 +41,7 @@ class CollectorService
         foreach ($adapters as $adapter) {
             if (!$adapter instanceof ApiAdapterInterface) {
                 throw new InvalidArgumentException(
-                  sprintf('All adapters passing to CollectorService should implement ApiAdapterInterface, but %s is not', get_class($adapter))
+                    sprintf('All adapters passing to CollectorService should implement ApiAdapterInterface, but %s is not', get_class($adapter))
                 );
             }
 
@@ -52,11 +54,12 @@ class CollectorService
 
     /**
      * @return ComicDTO[]
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     public function getComics(): array
     {
         try {
-            return $this->cache->get('comics', function(ItemInterface $item) {
+            return $this->cache->get('comics', function (ItemInterface $item) {
                 return $this->collectComicsFromAdapters();
             });
         } catch (Exception $e) {

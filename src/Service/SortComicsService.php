@@ -16,7 +16,7 @@ class SortComicsService
      */
     public function sortComics(array $comics): array
     {
-        usort($comics, function(ComicDTO $a, ComicDTO $b) {
+        usort($comics, function (ComicDTO $a, ComicDTO $b) {
             if ($a->publishDate->equalTo($b->publishDate)) {
                 return 0;
             }

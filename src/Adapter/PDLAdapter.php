@@ -9,7 +9,8 @@ use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * NOTE: feed return 10 images
+ * NOTE: feed return 10 images, so no need to define it in constant
+ * NOTE2: feed doesn't return image url, we had to grab it ourself by parsing web url
  *
  * Class PDLAdapter
  * @package App\Adapter
@@ -32,7 +33,8 @@ class PDLAdapter implements ApiAdapterInterface
         PDLDataTransformer $dataTransformer,
         HttpClientInterface $httpClient,
         LoggerInterface $logger
-    ) {
+    )
+    {
         $this->dataTransformer = $dataTransformer;
         $this->logger = $logger;
         $this->httpClient = $httpClient;
@@ -40,6 +42,10 @@ class PDLAdapter implements ApiAdapterInterface
 
     /**
      * @return ComicDTO[]
+     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
     public function getComics(): array
     {
@@ -47,10 +53,10 @@ class PDLAdapter implements ApiAdapterInterface
         try {
             $rss = simplexml_load_file(static::FEED_URL);
             foreach ($rss->channel->item as $item) {
-                $imageUrl = $this->grabPictureUrl((string) $item->guid);
+                $imageUrl = $this->grabPictureUrl((string)$item->guid);
                 $images[] = $this->dataTransformer->transform($item, $imageUrl);
             }
-        }catch (Exception $e) {
+        } catch (Exception $e) {
             $this->logger->error(
                 sprintf(
                     "Exception %s was thrown, message: %s",
@@ -63,7 +69,15 @@ class PDLAdapter implements ApiAdapterInterface
         return $images;
     }
 
-    private function grabPictureUrl($webUrl)
+    /**
+     * @param string $webUrl
+     * @return mixed
+     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
+     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     */
+    private function grabPictureUrl(string $webUrl)
     {
         $response = $this->httpClient->request('GET', $webUrl);
         $content = $response->getContent();
@@ -71,7 +85,7 @@ class PDLAdapter implements ApiAdapterInterface
         $re1 = '~<div class="wp-block-image">.*src="(.*)".*\</div>~siU';
         $pregMatchResult = preg_match($re1, $content, $matches);
         if ($pregMatchResult !== 1) {
-            throw new \RuntimeException(sprintf("Cannot parse url %s for image", $webUrl));
+            throw new \RuntimeException(sprintf("Cannot find comic image in url %s", $webUrl));
         }
 
         return $matches[1];

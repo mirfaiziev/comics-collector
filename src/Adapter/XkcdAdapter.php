@@ -6,7 +6,6 @@ use App\Adapter\DataTransformer\XkcdDataTransformer;
 use App\DTO\ComicDTO;
 use Exception;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ParameterBag\ContainerBagInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -18,27 +17,26 @@ class XkcdAdapter implements ApiAdapterInterface
     const CURRENT_COMIC_URL = 'http://xkcd.com/info.0.json';
     const CONCRETE_COMIC_URL = 'http://xkcd.com/%d/info.0.json';
 
+    const NUMBER_OF_PICTURES = 10;
+
     private HttpClientInterface $httpClient;
     private XkcdDataTransformer $dataTransformer;
     private LoggerInterface $logger;
 
-    private int $numberOfPictures;
     private int $currentComicId;
 
     /**
      * XkcdAdapter constructor.
-     * @param ContainerBagInterface $params
      * @param HttpClientInterface $httpClient
      * @param XkcdDataTransformer $dataTransformer
      * @param LoggerInterface $logger
      */
     public function __construct(
-        ContainerBagInterface $params,
         HttpClientInterface $httpClient,
         XkcdDataTransformer $dataTransformer,
         LoggerInterface $logger
-    ) {
-        $this->numberOfPictures = $params->get('app.xkcd_adapter.number_of_pictures');
+    )
+    {
         $this->httpClient = $httpClient;
         $this->dataTransformer = $dataTransformer;
         $this->logger = $logger;
@@ -56,10 +54,10 @@ class XkcdAdapter implements ApiAdapterInterface
         $images = [];
 
         try {
-            $images[] = $this->getImageDataFromUrl(self::CURRENT_COMIC_URL);
+            $images[] = $this->getComicDataFromUrl(self::CURRENT_COMIC_URL);
 
-            for ($i = 1; $i < $this->numberOfPictures; $i++) {
-                $images[] = $this->getImageDataFromUrl(
+            for ($i = 1; $i < static::NUMBER_OF_PICTURES; $i++) {
+                $images[] = $this->getComicDataFromUrl(
                     sprintf(self::CONCRETE_COMIC_URL, $this->currentComicId - $i)
                 );
             }
@@ -84,7 +82,7 @@ class XkcdAdapter implements ApiAdapterInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
      * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
      */
-    private function getImageDataFromUrl(string $url): ComicDTO
+    private function getComicDataFromUrl(string $url): ComicDTO
     {
         $response = $this->httpClient->request(
             'GET',

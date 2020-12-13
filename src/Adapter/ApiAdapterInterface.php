@@ -2,10 +2,12 @@
 
 namespace App\Adapter;
 
+use App\DTO\ComicDTO;
+
 interface ApiAdapterInterface
 {
     /**
-     * @return array[App\DTO\ComicDTO]
+     * @return ComicDTO[]
      */
     public function getComics(): array;
 }
