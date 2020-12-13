@@ -1,0 +1,9 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: Comic Collector
+            description: Get comics from your favoire sites
+            version: 1.0.0
+    areas: # to filter documented areas
+        path_patterns:
+            - ^/(?!_error|doc.json$) # Accepts routes under / except /doc.json and _error
