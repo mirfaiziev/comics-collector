@@ -6,6 +6,13 @@ use App\Adapter\DataTransformer\PDLDataTransformer;
 use App\DTO\ComicDTO;
 use Exception;
 use Psr\Log\LoggerInterface;
+use RangeException;
+use RuntimeException;
+use SimpleXMLElement;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -19,43 +26,42 @@ class PDLAdapter implements ApiAdapterInterface
 {
     const FEED_URL = 'http://feeds.feedburner.com/PoorlyDrawnLines';
 
-    private PDLDataTransformer $dataTransformer;
-    private LoggerInterface $logger;
     private HttpClientInterface $httpClient;
+    private LoggerInterface $logger;
+    private PDLDataTransformer $dataTransformer;
 
     /**
      * PDLAdapter constructor.
-     * @param PDLDataTransformer $dataTransformer
      * @param HttpClientInterface $httpClient
      * @param LoggerInterface $logger
+     * @param PDLDataTransformer $dataTransformer
      */
     public function __construct(
-        PDLDataTransformer $dataTransformer,
         HttpClientInterface $httpClient,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        PDLDataTransformer $dataTransformer
     )
     {
-        $this->dataTransformer = $dataTransformer;
-        $this->logger = $logger;
         $this->httpClient = $httpClient;
+        $this->logger = $logger;
+        $this->dataTransformer = $dataTransformer;
     }
 
     /**
      * @return ComicDTO[]
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     * @throws ClientExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
      */
     public function getComics(): array
     {
-        $images = [];
+        $comics = [];
+
         try {
-            $rss = simplexml_load_file(static::FEED_URL);
-            foreach ($rss->channel->item as $item) {
-                $imageUrl = $this->grabPictureUrl((string)$item->guid);
-                $images[] = $this->dataTransformer->transform($item, $imageUrl);
-            }
+            $response = $this->httpClient->request('GET', static::FEED_URL);
+            $rss = simplexml_load_string($response->getContent());
+            $comics = $this->processRss($rss);
         } catch (Exception $e) {
             $this->logger->error(
                 sprintf(
@@ -66,26 +72,56 @@ class PDLAdapter implements ApiAdapterInterface
             );
         }
 
-        return $images;
+        return $comics;
     }
 
     /**
-     * @param string $webUrl
-     * @return mixed
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     * @param SimpleXMLElement $rss
+     * @return ComicDTO[]
+     * @throws ClientExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
      */
-    private function grabPictureUrl(string $webUrl)
+    private function processRss(SimpleXMLElement $rss): array
     {
-        $response = $this->httpClient->request('GET', $webUrl);
-        $content = $response->getContent();
+        $items = [];
+        $comics = [];
+        foreach ($rss->channel->item as $xmlItem) {
+            if (!property_exists($xmlItem, 'guid')) {
+                throw new RangeException("Cannot find 'guid' in the feed");
+            }
+            $webUrl = (string)$xmlItem->guid;
+            $items[] = [
+                'xml' => $xmlItem,
+                'webUrl' => $webUrl,
+                'response' => $this->httpClient->request('GET', $webUrl)
+            ];
+        }
 
+        foreach ($items as $item) {
+            $imageUrl = $this->parseImageUrl($item['response']->getContent(), $item['webUrl']);
+            $comics[] = $this->dataTransformer->transform($item['xml'], $imageUrl);
+        }
+
+        return $comics;
+    }
+
+    /**
+     * @param string $content
+     * @param string $webUrl
+     * @return string
+     * @throws ClientExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     */
+    private function parseImageUrl(string $content, string $webUrl): string
+    {
         $re1 = '~<div class="wp-block-image">.*src="(.*)".*\</div>~siU';
         $pregMatchResult = preg_match($re1, $content, $matches);
         if ($pregMatchResult !== 1) {
-            throw new \RuntimeException(sprintf("Cannot find comic image in url %s", $webUrl));
+            throw new RuntimeException(sprintf("Cannot find comic image in url %s", $webUrl));
         }
 
         return $matches[1];

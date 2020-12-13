@@ -5,7 +5,7 @@ namespace App\Adapter\DataTransformer;
 use App\Adapter\DataTransformer\Validator\ObjectPropertiesValidator;
 use App\DTO\ComicDTO;
 use Carbon\Carbon;
-use InvalidArgumentException;
+use RangeException;
 use SimpleXMLElement;
 
 /**
@@ -40,7 +40,7 @@ class PDLDataTransformer
     public function transform(SimpleXMLElement $input, string $imageUrl): ComicDTO
     {
         if (!$this->objectPropertiesValidator->isValidObject($input, static::REQUIRED_PROPERTIES)){
-            throw new InvalidArgumentException(
+            throw new RangeException(
                 sprintf(
                     "Invalid data to transform, the following properties should be present in the object: %s",
                     $this->objectPropertiesValidator->getJoinedMissesProperties()

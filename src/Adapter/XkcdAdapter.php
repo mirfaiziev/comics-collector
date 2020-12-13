@@ -6,6 +6,11 @@ use App\Adapter\DataTransformer\XkcdDataTransformer;
 use App\DTO\ComicDTO;
 use Exception;
 use Psr\Log\LoggerInterface;
+use RangeException;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -20,47 +25,42 @@ class XkcdAdapter implements ApiAdapterInterface
     const NUMBER_OF_PICTURES = 10;
 
     private HttpClientInterface $httpClient;
-    private XkcdDataTransformer $dataTransformer;
     private LoggerInterface $logger;
+    private XkcdDataTransformer $dataTransformer;
 
     private int $currentComicId;
 
     /**
      * XkcdAdapter constructor.
      * @param HttpClientInterface $httpClient
-     * @param XkcdDataTransformer $dataTransformer
      * @param LoggerInterface $logger
+     * @param XkcdDataTransformer $dataTransformer
      */
     public function __construct(
         HttpClientInterface $httpClient,
-        XkcdDataTransformer $dataTransformer,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        XkcdDataTransformer $dataTransformer
     )
     {
         $this->httpClient = $httpClient;
-        $this->dataTransformer = $dataTransformer;
         $this->logger = $logger;
+        $this->dataTransformer = $dataTransformer;
     }
 
     /**
      * @return ComicDTO[]
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
+     * @throws ClientExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
      */
     public function getComics(): array
     {
-        $images = [];
+        $comics = [];
 
         try {
-            $images[] = $this->getComicDataFromUrl(self::CURRENT_COMIC_URL);
-
-            for ($i = 1; $i < static::NUMBER_OF_PICTURES; $i++) {
-                $images[] = $this->getComicDataFromUrl(
-                    sprintf(self::CONCRETE_COMIC_URL, $this->currentComicId - $i)
-                );
-            }
+            $comics[] = $this->getCurrentComic();
+            $comics = array_merge($comics, $this->getRestComics());
         } catch (Exception $e) {
             $this->logger->error(
                 sprintf(
@@ -71,30 +71,47 @@ class XkcdAdapter implements ApiAdapterInterface
             );
         }
 
-        return $images;
+        return $comics;
     }
 
-    /**
-     * @param string $url
-     * @return ComicDTO
-     * @throws \Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface
-     * @throws \Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface
-     */
-    private function getComicDataFromUrl(string $url): ComicDTO
+
+    private function getCurrentComic(): ComicDTO
     {
         $response = $this->httpClient->request(
             'GET',
-            $url
+            static::CURRENT_COMIC_URL
         );
 
         $comicObj = json_decode($response->getContent());
-
-        if ($url === self::CURRENT_COMIC_URL) {
-            $this->currentComicId = $comicObj->num;
+        if (!property_exists($comicObj, 'num')) {
+            throw new RangeException("Cannot find 'num' in the feed");
         }
+        $this->currentComicId = (int)$comicObj->num;
 
         return $this->dataTransformer->transform($comicObj);
+    }
+
+    /**
+     * @return ComicDTO[]
+     * @throws TransportExceptionInterface
+     */
+    public function getRestComics(): array
+    {
+        $responses = [];
+        $comics = [];
+
+        for ($i = 1; $i < static::NUMBER_OF_PICTURES; $i++) {
+            $responses[] = $this->httpClient->request(
+                'GET',
+                sprintf(static::CONCRETE_COMIC_URL, $this->currentComicId - $i)
+            );
+        }
+
+        foreach ($responses as $response) {
+            $comicObj = json_decode($response->getContent());
+            $comics[] = $this->dataTransformer->transform($comicObj);
+        }
+
+        return $comics;
     }
 }

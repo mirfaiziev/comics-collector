@@ -5,7 +5,7 @@ namespace App\Adapter\DataTransformer;
 use App\Adapter\DataTransformer\Validator\ObjectPropertiesValidator;
 use App\DTO\ComicDTO;
 use Carbon\Carbon;
-use InvalidArgumentException;
+use RangeException;
 
 /**
  * NOTE: because there is no time of publishDate it will be transformed
@@ -46,7 +46,7 @@ class XkcdDataTransformer
     public function transform(object $input): ComicDTO
     {
         if (!$this->objectPropertiesValidator->isValidObject($input, static::REQUIRED_PROPERTIES)){
-            throw new InvalidArgumentException(
+            throw new RangeException(
                 sprintf(
                     "Invalid data to transform, the following properties should be present in the object: %s",
                     $this->objectPropertiesValidator->getJoinedMissesProperties()
