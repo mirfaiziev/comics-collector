@@ -4,14 +4,17 @@ namespace App\Adapter;
 
 use App\Adapter\DataTransformer\XkcdDataTransformer;
 use App\DTO\ComicDTO;
-use Exception;
 use Psr\Log\LoggerInterface;
 use RangeException;
+use RuntimeException;
+use stdClass;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
+use Throwable;
 
 /**
  * Class XkcdAdapter
@@ -61,7 +64,7 @@ class XkcdAdapter implements ApiAdapterInterface
         try {
             $comics[] = $this->getCurrentComic();
             $comics = array_merge($comics, $this->getRestComics());
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->logger->error(
                 sprintf(
                     "Exception %s was thrown, message: %s",
@@ -74,7 +77,13 @@ class XkcdAdapter implements ApiAdapterInterface
         return $comics;
     }
 
-
+    /**
+     * @return ComicDTO
+     * @throws ClientExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     */
     private function getCurrentComic(): ComicDTO
     {
         $response = $this->httpClient->request(
@@ -82,10 +91,12 @@ class XkcdAdapter implements ApiAdapterInterface
             static::CURRENT_COMIC_URL
         );
 
-        $comicObj = json_decode($response->getContent());
+        $comicObj = $this->parseResponse($response);
+
         if (!property_exists($comicObj, 'num')) {
             throw new RangeException("Cannot find 'num' in the feed");
         }
+
         $this->currentComicId = (int)$comicObj->num;
 
         return $this->dataTransformer->transform($comicObj);
@@ -93,9 +104,12 @@ class XkcdAdapter implements ApiAdapterInterface
 
     /**
      * @return ComicDTO[]
+     * @throws ClientExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
      * @throws TransportExceptionInterface
      */
-    public function getRestComics(): array
+    private function getRestComics(): array
     {
         $responses = [];
         $comics = [];
@@ -108,10 +122,30 @@ class XkcdAdapter implements ApiAdapterInterface
         }
 
         foreach ($responses as $response) {
-            $comicObj = json_decode($response->getContent());
+            $comicObj = $this->parseResponse($response);
             $comics[] = $this->dataTransformer->transform($comicObj);
         }
 
         return $comics;
+    }
+
+    /**
+     * @param ResponseInterface $response
+     * @return stdClass
+     * @throws ClientExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     */
+    private function parseResponse(ResponseInterface $response): stdClass
+    {
+        $content = $response->getContent();
+        $comicObj = json_decode($content);
+        if (is_null($comicObj)) {
+            throw new RuntimeException(
+                sprintf('Cannot decode response: \'%s\'', $content)
+            );
+        }
+        return $comicObj;
     }
 }

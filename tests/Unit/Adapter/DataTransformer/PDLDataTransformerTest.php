@@ -7,8 +7,8 @@ use App\Adapter\DataTransformer\PDLDataTransformer;
 use App\Adapter\DataTransformer\Validator\ObjectPropertiesValidator;
 use App\DTO\ComicDTO;
 use Carbon\Carbon;
-use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use RangeException;
 use SimpleXMLElement;
 
 /**
@@ -31,17 +31,15 @@ class PDLDataTransformerTest extends TestCase
                 $missedPropertiesList
             )
         );
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(RangeException::class);
 
         $validator = $this->createMock(ObjectPropertiesValidator::class);
         $validator->expects($this->once())
             ->method('isValidObject')
-            ->willReturn(false)
-        ;
+            ->willReturn(false);
         $validator->expects($this->once())
             ->method('getJoinedMissesProperties')
-            ->willReturn($missedPropertiesList)
-        ;
+            ->willReturn($missedPropertiesList);
         $dataTransformer = new PDLDataTransformer($validator);
         $dataTransformer->transform(new SimpleXMLElement('<xml/>'), '');
     }
@@ -60,8 +58,7 @@ class PDLDataTransformerTest extends TestCase
         $validator = $this->createMock(ObjectPropertiesValidator::class);
         $validator->expects($this->once())
             ->method('isValidObject')
-            ->willReturn(true)
-        ;
+            ->willReturn(true);
         $validator->expects($this->never())->method('getJoinedMissesProperties');
 
         $dataTransformer = new PDLDataTransformer($validator);

@@ -29,6 +29,6 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
-    App\Service\CollectorService:
+    App\Service\ComicsCollectorService:
         arguments:
-            $adapters: [ '@App\Adapter\XkcdAdapter', '@App\Adapter\PDLAdapter']
+            $adapters: [ '@App\Adapter\XkcdAdapter', '@App\Adapter\PDLAdapter' ]

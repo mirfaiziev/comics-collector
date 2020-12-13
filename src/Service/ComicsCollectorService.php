@@ -11,10 +11,10 @@ use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
 /**
- * Class CollectorService
+ * Class ComicsCollectorService
  * @package App\Service
  */
-class CollectorService
+class ComicsCollectorService
 {
     /**
      * @var ApiAdapterInterface[]|array

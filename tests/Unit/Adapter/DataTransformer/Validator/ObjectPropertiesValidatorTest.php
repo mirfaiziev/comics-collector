@@ -2,7 +2,6 @@
 
 namespace App\Test\Unit\Adapter\DataTransformer\Validator;
 
-
 use App\Adapter\DataTransformer\Validator\ObjectPropertiesValidator;
 use PHPUnit\Framework\TestCase;
 
@@ -12,22 +11,22 @@ class ObjectPropertiesValidatorTest extends TestCase
      * @dataProvider getTestMissedPropertiesValidationData
      * @param array $input
      * @param array $requiredProperties
-     * @param bool $expecedIsValid
+     * @param bool $expectedIsValid
      * @param string $exceptedJoinedMissedProperties
      */
     public function testMissedPropertiesValidation(
         array $input,
         array $requiredProperties,
-        bool $expecedIsValid,
+        bool $expectedIsValid,
         string $exceptedJoinedMissedProperties
-    ) {
-
-        $inputObj = (object) $input;
+    )
+    {
+        $inputObj = (object)$input;
 
         $objectPropertiesValidator = new ObjectPropertiesValidator();
 
         $this->assertEquals(
-            $expecedIsValid,
+            $expectedIsValid,
             $objectPropertiesValidator->isValidObject($inputObj, $requiredProperties)
         );
 

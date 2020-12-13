@@ -5,8 +5,8 @@ use App\Adapter\DataTransformer\Validator\ObjectPropertiesValidator;
 use App\Adapter\DataTransformer\XkcdDataTransformer;
 use App\DTO\ComicDTO;
 use Carbon\Carbon;
-use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use RangeException;
 use stdClass;
 
 class XkcdDataTransformerTest extends TestCase
@@ -25,17 +25,16 @@ class XkcdDataTransformerTest extends TestCase
                 $missedPropertiesList
             )
         );
-        $this->expectException(InvalidArgumentException::class);
+
+        $this->expectException(RangeException::class);
 
         $validator = $this->createMock(ObjectPropertiesValidator::class);
         $validator->expects($this->once())
             ->method('isValidObject')
-            ->willReturn(false)
-        ;
+            ->willReturn(false);
         $validator->expects($this->once())
             ->method('getJoinedMissesProperties')
-            ->willReturn($missedPropertiesList)
-        ;
+            ->willReturn($missedPropertiesList);
         $dataTransformer = new XkcdDataTransformer($validator);
         $dataTransformer->transform(new stdClass());
     }

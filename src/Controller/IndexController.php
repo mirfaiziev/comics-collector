@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use App\Service\CollectorService;
+use App\Service\ComicsCollectorService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Annotation\Route;
@@ -15,10 +15,10 @@ class IndexController extends AbstractController
 {
     /**
      * @Route("/", methods={"GET"})
-     * @param CollectorService $collectorService
+     * @param ComicsCollectorService $collectorService
      * @return JsonResponse
      */
-    public function index(CollectorService $collectorService): JsonResponse
+    public function index(ComicsCollectorService $collectorService): JsonResponse
     {
         return $this->json($collectorService->getComics());
     }

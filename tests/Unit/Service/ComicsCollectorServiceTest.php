@@ -2,8 +2,7 @@
 
 namespace App\Test\Unit\Service;
 
-
-use App\Service\CollectorService;
+use App\Service\ComicsCollectorService;
 use App\Service\SortComicsService;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
@@ -11,7 +10,7 @@ use Psr\Log\LoggerInterface;
 use stdClass;
 use Symfony\Contracts\Cache\CacheInterface;
 
-class CollectorServiceTest extends TestCase
+class ComicsCollectorServiceTest extends TestCase
 {
     public function testConstructorExceptionWhenWrongArgumentsPassed()
     {
@@ -23,6 +22,6 @@ class CollectorServiceTest extends TestCase
         $cache = $this->createMock(CacheInterface::class);
         $logger = $this->createMock(LoggerInterface::class);
 
-        new CollectorService([$wrongAdapter], $sortService, $cache, $logger);
+        new ComicsCollectorService([$wrongAdapter], $sortService, $cache, $logger);
     }
 }
